@@ -5,6 +5,7 @@ import {
   styleModule,
   eventListenersModule,
   jsx,
+  VNode,
 } from "snabbdom";
 
 const patch = init([
@@ -15,16 +16,31 @@ const patch = init([
 ]);
 
 const ReReact = (function () {
-  let state;
+  let state: any;
+  let global: {
+    component?: () => VNode;
+    instance?: VNode;
+  } = {};
 
   return {
+    setup(container: HTMLElement, component: () => VNode): void {
+      global.component = component;
+      global.instance = component();
+      patch(container, global.instance);
+    },
+
+    render(component: () => VNode): void {
+      const newInstance = component();
+      patch(global.instance, newInstance);
+      global.instance = newInstance;
+    },
+
     useState<T>(initialState: T): [T, (newState: T) => void] {
       state = state || initialState;
+
       function setState(newState: T) {
         state = newState;
-        const newCur = <MyComponent name="RJ" />;
-        patch(cur, newCur);
-        cur = newCur;
+        ReReact.render(global.component);
       }
 
       return [state, setState];
@@ -33,9 +49,8 @@ const ReReact = (function () {
 })();
 
 const { useState } = ReReact;
-let cur = <MyComponent name="RJ" />;
 
-function MyComponent({ name }) {
+function MyComponent(): VNode {
   const [goodbye, setGoodbye] = useState(false);
 
   return (
@@ -43,12 +58,11 @@ function MyComponent({ name }) {
       <button on={{ click: () => setGoodbye(!goodbye) }}>
         {goodbye ? "Goodbye" : "Hello"}
       </button>
-      <div>
-        {goodbye ? "Goodbye" : "Hello"} {name}
-      </div>
+      <div>{goodbye ? "Goodbye" : "Hello"}</div>
     </div>
   );
 }
 
 const container = document.getElementById("container");
-patch(container, cur);
+
+ReReact.setup(container, MyComponent);
