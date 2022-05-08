@@ -14,8 +14,6 @@ const patch = init([
   eventListenersModule,
 ]);
 
-function render() {}
-
 const ReReact = (function () {
   let state;
 
@@ -24,7 +22,9 @@ const ReReact = (function () {
       state = state || initialState;
       function setState(newState: T) {
         state = newState;
-        patch(cur, <MyComponent name="RJ" />);
+        const newCur = <MyComponent name="RJ" />;
+        patch(cur, newCur);
+        cur = newCur;
       }
 
       return [state, setState];
@@ -40,7 +40,9 @@ function MyComponent({ name }) {
 
   return (
     <div>
-      <button on={{ click: () => setGoodbye(true) }}>Goodbye</button>
+      <button on={{ click: () => setGoodbye(!goodbye) }}>
+        {goodbye ? "Goodbye" : "Hello"}
+      </button>
       <div>
         {goodbye ? "Goodbye" : "Hello"} {name}
       </div>
