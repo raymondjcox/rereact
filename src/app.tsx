@@ -16,53 +16,66 @@ const patch = init([
 ]);
 
 const ReReact = (function () {
-  let state: any;
+  let state: any[] = [];
   let global: {
     component?: () => VNode;
     instance?: VNode;
   } = {};
+  let index = 0;
 
   return {
-    setup(container: HTMLElement, component: () => VNode): void {
+    render(component: () => VNode, container?: HTMLElement): void {
+      index = 0;
+      const instance = component();
+      if (container) {
+        patch(container, instance);
+      } else {
+        patch(global.instance, instance);
+      }
+      global.instance = instance;
       global.component = component;
-      global.instance = component();
-      patch(container, global.instance);
-    },
-
-    render(component: () => VNode): void {
-      const newInstance = component();
-      patch(global.instance, newInstance);
-      global.instance = newInstance;
     },
 
     useState<T>(initialState: T): [T, (newState: T) => void] {
-      state = state || initialState;
+      const currentState = state[index] || initialState;
+      state[index] = currentState;
 
-      function setState(newState: T) {
-        state = newState;
-        ReReact.render(global.component);
-      }
+      const setState = (function () {
+        let currentIndex = index;
+        return function (newState: T) {
+          state[currentIndex] = newState;
+          ReReact.render(global.component);
+        };
+      })();
 
-      return [state, setState];
+      index++;
+
+      return [currentState, setState];
     },
   };
 })();
 
 const { useState } = ReReact;
 
-function MyComponent(): VNode {
+function MyComponent({ name }): VNode {
   const [goodbye, setGoodbye] = useState(false);
 
   return (
     <div>
       <button on={{ click: () => setGoodbye(!goodbye) }}>
-        {goodbye ? "Goodbye" : "Hello"}
+        {goodbye ? `Goodbye ${name}` : `Hello ${name}`}
       </button>
-      <div>{goodbye ? "Goodbye" : "Hello"}</div>
+      <div>{goodbye ? `Goodbye ${name}` : `Hello ${name}`}</div>
+      <MyOtherComponent />
     </div>
   );
 }
 
+function MyOtherComponent(): VNode {
+  const [text, setText] = useState("THIS IS COOL");
+  return <div on={{ click: () => setText("I clicked this") }}>{text}</div>;
+}
+
 const container = document.getElementById("container");
 
-ReReact.setup(container, MyComponent);
+ReReact.render(() => <MyComponent name="RJ" />, container);
