@@ -7,23 +7,21 @@ import {
   jsx,
 } from "snabbdom";
 
-const patch = init([
+const render = init([
   classModule,
   propsModule,
   styleModule,
   eventListenersModule,
 ]);
 
-const container = document.getElementById("container");
-const v1 = (
-  <div style={{ cursor: "pointer" }} on={{ click: () => patch(v1, v2) }}>
-    Hello world!
-  </div>
-);
-const v2 = (
-  <div>
-    Goodbye <b>cruel</b> <i>world!</i>
-  </div>
-);
+function MyComponent({ name }) {
+  const time = new Date().getTime();
 
-patch(container, v1);
+  return (
+    <div>
+      Hello {name} the time is {time}
+    </div>
+  );
+}
+const container = document.getElementById("container");
+render(container, <MyComponent name="RJ" />);
